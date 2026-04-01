@@ -47,3 +47,40 @@ create policy "wlasne szablony" on templates
 
 create policy "wlasne pozycje" on items
   for all using (auth.uid() = user_id);
+
+-- ============================================================
+-- Sprint 3: Email Inbound Pipeline
+-- Uruchom w Supabase SQL Editor po Sprint 1+2
+-- ============================================================
+
+create table email_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade,
+  client_id uuid references clients(id) on delete set null,
+  from_email text not null,
+  subject text,
+  received_at timestamptz default now(),
+  matched bool default false
+);
+
+create table attachments (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users(id) on delete cascade not null,
+  client_id uuid references clients(id) on delete cascade not null,
+  email_log_id uuid references email_logs(id) on delete cascade,
+  item_id uuid references items(id) on delete set null,
+  filename text not null,
+  file_path text not null,
+  mime_type text,
+  size_bytes int,
+  created_at timestamptz default now()
+);
+
+alter table email_logs enable row level security;
+alter table attachments enable row level security;
+
+create policy "wlasne email_logs" on email_logs
+  for all using (auth.uid() = user_id);
+
+create policy "wlasne zalaczniki" on attachments
+  for all using (auth.uid() = user_id);

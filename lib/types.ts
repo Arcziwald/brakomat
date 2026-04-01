@@ -33,3 +33,26 @@ export interface Item {
   last_reminder_at: string | null;
   created_at: string;
 }
+
+export interface EmailLog {
+  id: string;
+  user_id: string | null;
+  client_id: string | null;
+  from_email: string;
+  subject: string | null;
+  received_at: string;
+  matched: boolean;
+}
+
+export interface Attachment {
+  id: string;
+  user_id: string;
+  client_id: string;
+  email_log_id: string | null;
+  item_id: string | null;
+  filename: string;
+  file_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  created_at: string;
+}

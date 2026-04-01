@@ -1,18 +1,26 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { ClientItemsTable } from "@/components/clients/ClientItemsTable";
+import { AttachmentsList } from "@/components/clients/AttachmentsList";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, Mail, Phone } from "lucide-react";
+import { ChevronLeft, Mail, Phone, Paperclip } from "lucide-react";
 
 export default async function ClientDetailPage({ params }: { params: { id: string } }) {
   const supabase = createClient();
 
-  const { data: client } = await supabase
-    .from("clients")
-    .select("*, items(*)")
-    .eq("id", params.id)
-    .single();
+  const [{ data: client }, { data: attachments }] = await Promise.all([
+    supabase
+      .from("clients")
+      .select("*, items(*)")
+      .eq("id", params.id)
+      .single(),
+    supabase
+      .from("attachments")
+      .select("*")
+      .eq("client_id", params.id)
+      .order("created_at", { ascending: false }),
+  ]);
 
   if (!client) notFound();
 
@@ -61,6 +69,14 @@ export default async function ClientDetailPage({ params }: { params: { id: strin
         <div>
           <h3 className="font-semibold text-gray-900 mb-4">Pozycje ({items.length})</h3>
           <ClientItemsTable clientId={client.id} clientName={client.name} items={items} />
+        </div>
+
+        <div>
+          <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <Paperclip className="w-4 h-4 text-gray-400" />
+            Pliki otrzymane emailem ({(attachments ?? []).length})
+          </h3>
+          <AttachmentsList attachments={attachments ?? []} />
         </div>
       </div>
     </AppShell>

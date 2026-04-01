@@ -1,16 +1,22 @@
 import { AppShell } from "@/components/layout/AppShell";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { createClient } from "@/lib/supabase/server";
-import { Users, FileWarning, Clock, Search, Plus } from "lucide-react";
+import { Users, FileWarning, Clock, Search, Plus, Inbox } from "lucide-react";
 import Link from "next/link";
 
 export default async function DashboardPage() {
   const supabase = createClient();
 
-  const [{ count: clientCount }, { data: items }] = await Promise.all([
-    supabase.from("clients").select("*", { count: "exact", head: true }),
-    supabase.from("items").select("status, due_date"),
-  ]);
+  const [{ count: clientCount }, { data: items }, { count: newFilesCount }] =
+    await Promise.all([
+      supabase.from("clients").select("*", { count: "exact", head: true }),
+      supabase.from("items").select("status, due_date"),
+      supabase
+        .from("email_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("matched", true)
+        .gte("received_at", new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
+    ]);
 
   const allItems = items ?? [];
   const now = new Date().toISOString().slice(0, 10);
@@ -34,11 +40,12 @@ export default async function DashboardPage() {
   return (
     <AppShell title="Dashboard">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <StatCard label="Klienci" value={clientCount ?? 0} icon={Users} />
           <StatCard label="Braki dokumentow" value={missingCount} icon={FileWarning} accent="amber" />
           <StatCard label="Po terminie" value={overdueCount} icon={Clock} accent="red" />
           <StatCard label="Do sprawdzenia" value={reviewCount} icon={Search} accent="blue" />
+          <StatCard label="Pliki (7 dni)" value={newFilesCount ?? 0} icon={Inbox} accent="default" />
         </div>
 
         <div className="flex gap-3">
